@@ -689,6 +689,7 @@ void state_game_screen(){
     draw_game_board();
     wait_for_vsync();
     
+    /*
     // Game Screen
     while ((playerMoney1 < winningMoney) && (playerMoney2 < winningMoney))
     {
@@ -715,6 +716,7 @@ void state_game_screen(){
 
         //... so on 
     }
+     */ 
 }
 
 
