@@ -14,82 +14,6 @@
 #define PLAYER_1 1
 #define PLAYER_2 2
 
-/* ASCII Characters */
-// Special
-#define SPACE 0x20
-#define EXCL 0x21
-#define QUOT 0x22
-#define PERCENT 0x25
-#define QUEST 0x3F
-
-// Numbers
-#define ZERO 0x30
-#define ONE 0x31
-#define TWO 0x32
-#define THREE 0x33
-#define FOUR 0x34
-#define FIVE 0x35
-#define SIX 0x36
-#define SEVEN 0x37
-#define EIGHT 0x38
-#define NINE 0x39
-
-// Upper Case Alphbet
-#define CHAR_A 0x41
-#define CHAR_B 0x42
-#define CHAR_C 0x43
-#define CHAR_D 0x44
-#define CHAR_E 0x45
-#define CHAR_F 0x46
-#define CHAR_G 0x47
-#define CHAR_H 0x48
-#define CHAR_I 0x49
-#define CHAR_J 0x4A
-#define CHAR_K 0x4B
-#define CHAR_L 0x4C
-#define CHAR_M 0x4D
-#define CHAR_N 0x4E
-#define CHAR_O 0x4F
-#define CHAR_P 0x50
-#define CHAR_Q 0x51
-#define CHAR_R 0x52
-#define CHAR_S 0x53
-#define CHAR_T 0x54
-#define CHAR_U 0x55
-#define CHAR_V 0x56
-#define CHAR_W 0x57
-#define CHAR_X 0x58
-#define CHAR_Y 0x59
-#define CHAR_Z 0x5A
-
-// Upper Case Alphbet
-#define CHAR_a 0x61
-#define CHAR_b 0x62
-#define CHAR_c 0x63
-#define CHAR_d 0x64
-#define CHAR_e 0x65
-#define CHAR_f 0x66
-#define CHAR_g 0x67
-#define CHAR_h 0x68
-#define CHAR_i 0x69
-#define CHAR_j 0x6A
-#define CHAR_k 0x6B
-#define CHAR_l 0x6C
-#define CHAR_m 0x6D
-#define CHAR_n 0x6E
-#define CHAR_o 0x6F
-#define CHAR_p 0x70
-#define CHAR_q 0x71
-#define CHAR_r 0x72
-#define CHAR_s 0x73
-#define CHAR_t 0x74
-#define CHAR_u 0x75
-#define CHAR_v 0x76
-#define CHAR_w 0x77
-#define CHAR_x 0x78
-#define CHAR_y 0x79
-#define CHAR_z 0x7A
-
 
 /* Global Variables */
 volatile int pixel_buffer_start; 
@@ -620,6 +544,7 @@ void plot_string(int x, int y, char *text_ptr);
 void swap(int *value1, int *value2);
 void wait_for_vsync();
 void clear_drawing();
+void wait_for_title_input();
 
 
 int main(void)
@@ -632,8 +557,7 @@ int main(void)
     // Infinite Loop
     while (1){   
         
-        //state_title_screen();
-        
+        state_title_screen();
         state_game_screen();
         /*
         determineWinner();   
@@ -664,23 +588,46 @@ void state_title_screen(){
     clear_text();
     draw_title_screen();
     wait_for_vsync();
-    /*
-    *Plan for this boolean usage:
-    * within interrupt handler, 
-    *if (enableWinningMoney){
-     * // Update the winning money global variable accordingly
-     * }
-    */
-    enableWinningMoneyInput = true;     // Now winning moeny will be
-                                        // updated when user presses
-                                        // PS/2 key button
-    while (winningMoney == UNINITIALIZED){    
 
-    }
+    wait_for_title_input();
 
     // Clear title screen
     enableWinningMoneyInput = false;
     clear_screen();
+}
+
+
+/* Waiting for the user to select winning value in title screen*/
+// Code Reference: http://www-ug.eecg.toronto.edu/msl/nios_devices/dev_ps2.html
+void wait_for_title_input(){
+    // Local Variable Declaration
+    unsigned char byte1 = 0;
+    unsigned char byte2 = 0;
+    unsigned char byte3 = 0;
+    int PS2_data = 0, RVALID = 0;
+    
+    // Get PS/2 Base Address
+    volatile int * PS2_ptr = (int *) 0xFF200100;
+
+    // Continuously read user input
+    while (winningMoney == UNINITIALIZED) {
+        PS2_data = *(PS2_ptr);	// read the Data register in the PS/2 port
+        RVALID = (PS2_data & 0x8000);	// extract the RVALID field
+        if (RVALID != 0)
+        {
+            /* always save the last three bytes received */
+            byte1 = byte2;
+            byte2 = byte3;
+            byte3 = PS2_data & 0xFF;
+        }
+        
+        // Check for correct user input
+        if (byte3 == 0x16){
+            winningMoney = 5000;
+        }
+    }
+    
+    clear_text();
 }
 
 
@@ -689,10 +636,10 @@ void state_game_screen(){
     draw_game_board();
     wait_for_vsync();
     
-    /*
     // Game Screen
     while ((playerMoney1 < winningMoney) && (playerMoney2 < winningMoney))
     {
+        /*
         draw_game_information();  // Score, highlight property ownership, etc
 
         // User turn
@@ -715,8 +662,8 @@ void state_game_screen(){
         }
 
         //... so on 
+         */ 
     }
-     */ 
 }
 
 
