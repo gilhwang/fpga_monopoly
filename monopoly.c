@@ -6,7 +6,7 @@
 
 // Includes
 #include <stdbool.h>
-#include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #define UNINITIALIZED 0
 #define PROPERTY 0
@@ -23,19 +23,19 @@ bool isBackBufferSDRAM = true;
 bool restart = false;
 bool enableWinningMoneyInput = false;
 bool enableRestartInput = false;
-double winningMoney = UNINITIALIZED;
+int winningMoney = UNINITIALIZED;
 int board[NUM_BOARD_BOX] = {0}; // not sure when to use, but should be useful
 
 // Player 1 information
 double playerMoney1 = 0;
-int currentPosition1  = 0;
+int position1 = 0;
 bool playerTurn1 = true; 
 int property1[NUM_BOARD_BOX] = {0}; // Property ownership for player1
 
         
 // Player 2 information
 double playerMoney2 = 0;
-int currentPosition2 = 0;
+int position2 = 0;
 bool playerTurn2 = false;
 int property2[NUM_BOARD_BOX] = {0}; // Property ownership for player2
 
@@ -537,6 +537,7 @@ void draw_title_screen();
 void draw_title_message();
 void state_game_screen();
 void draw_game_board();
+void draw_game_information();
 void set_front_back_buffer();
 void draw_line(int x_start, int y_start, int x_end, int y_end, short int color);
 void draw_rectangle(int x, int y, int width, int height, short int color);
@@ -667,8 +668,6 @@ void wait_for_title_input(){
         }
     }
     
-    printf("Test");
-    
     clear_text();
 }
 
@@ -685,15 +684,14 @@ void wait_for_keyboard_break(){
 
 /* Action for game screen */
 void state_game_screen(){
-    draw_game_board();
-    wait_for_vsync();
-    
     // Game Screen
     while ((playerMoney1 < winningMoney) && (playerMoney2 < winningMoney))
     {
-        /*
+        clear_screen();
+        draw_game_board();
         draw_game_information();  // Score, highlight property ownership, etc
-
+        wait_for_vsync();
+        /*
         // User turn
         int diceMove = roll_dice();
         int landType = move_character(diceMove);    // e.g. landType:
@@ -716,6 +714,34 @@ void state_game_screen(){
         //... so on 
          */ 
     }
+}
+
+
+/* Draw game information */
+void draw_game_information(){
+    // Draw rectangle at the background
+    draw_rectangle(43, 43, 100, 40, 0x0);
+    
+    // Set character arrays
+    // Winning money
+    char string_winning[5];
+    char winning_money_info[] = "Winning Money: ";
+    strcat(winning_money_info, itoa(winningMoney, string_winning, 10));
+    
+    // Player 1 Money
+    char string_player1[5];
+    char player1_money_info[] = "Player 1: ";
+    strcat(player1_money_info, itoa(playerMoney1, string_player1, 10));
+    
+    // Player 2 Money
+    char string_player2[5];
+    char player2_money_info[] = "Player 2: ";
+    strcat(player2_money_info, itoa(playerMoney2, string_player2, 10));
+    
+    // Plot information as text
+    plot_string(13, 13, winning_money_info);
+    plot_string(13, 15, player1_money_info);
+    plot_string(13, 17, player2_money_info);
 }
 
 
