@@ -6,6 +6,7 @@
 
 // Includes
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #define UNINITIALIZED 0
 #define PROPERTY 0
@@ -537,7 +538,8 @@ void draw_title_message();
 void state_game_screen();
 void draw_game_board();
 void set_front_back_buffer();
-void draw_line(int x_start, int x_end, int y_start, int y_end, short int color);
+void draw_line(int x_start, int y_start, int x_end, int y_end, short int color);
+void draw_rectangle(int x, int y, int width, int height, short int color);
 void plot_pixel(int x, int y, short int line_color);
 void plot_character(int x, int y, int character);
 void plot_string(int x, int y, char *text_ptr);
@@ -545,6 +547,7 @@ void swap(int *value1, int *value2);
 void wait_for_vsync();
 void clear_drawing();
 void wait_for_title_input();
+void wait_for_keyboard_break();
 
 
 int main(void)
@@ -582,6 +585,34 @@ int main(void)
 }
 
 
+/* Draw rectangle */
+void draw_rectangle(int x, int y, int width, int height, short int color){
+    // Draw black rectangle
+    for (int j = y; j < y + height; ++j){
+       for (int i = x; i < x + width; ++i){
+           plot_pixel(i, j, color);
+       } 
+    }
+    
+    // Draw line border
+    // Top
+    draw_line(x, y, x+width-1, y, 0xFFFF);
+    draw_line(x, y+1, x+width-1, y+1, 0xFFFF);
+    
+    // Left
+    draw_line(x, y, x, y+height-1, 0xFFFF);
+    draw_line(x+1, y, x+1, y+height-1, 0xFFFF);
+    
+    // Right
+    draw_line(x+width-1, y, x+width-1, y+height-1, 0xFFFF);
+    draw_line(x+width-2, y, x+width-2, y+height-1, 0xFFFF);
+    
+    // Bottom
+    draw_line(x, y+height-1, x+width-1, y+height-1, 0xFFFF); 
+    draw_line(x, y+height-2, x+width-1, y+height-2, 0xFFFF);
+}
+
+
 /* Action for title screen */
 void state_title_screen(){
     // Title Screen
@@ -590,10 +621,7 @@ void state_title_screen(){
     wait_for_vsync();
 
     wait_for_title_input();
-
-    // Clear title screen
-    enableWinningMoneyInput = false;
-    clear_screen();
+    clear_text();
 }
 
 
@@ -622,12 +650,36 @@ void wait_for_title_input(){
         }
         
         // Check for correct user input
+        // Option 1 clicked
         if (byte3 == 0x16){
+            wait_for_keyboard_break();
+            winningMoney = 1000;
+        }
+        // Option 2 clicked
+        else if (byte3 == 0x1E){
+            wait_for_keyboard_break();
             winningMoney = 5000;
+        }
+        // Option 3 clicked
+        else if (byte3 == 0x26){
+            wait_for_keyboard_break();
+            winningMoney = 10000;
         }
     }
     
+    printf("Test");
+    
     clear_text();
+}
+
+
+/* Wait for the keyboard to exert break code */
+void wait_for_keyboard_break(){
+    volatile int * PS2_ptr = (int *) 0xFF200100;
+    
+    while (*(PS2_ptr) != 0xF0){
+        // Wait
+    }
 }
 
 
@@ -741,12 +793,14 @@ void draw_title_screen(){
 /* Draw message one title screen */
 void draw_title_message(){
     // Define constants
-    const int MESSAGE_X = 25;
-    const int MESSAGE_Y = 27;
+    const int MESSAGE_X = 10;
+    const int MESSAGE_Y = 30;
     
     char message[] = "[TO START: CHOOSE A WINNING GOAL]";
     char line[] =    "---------------------------------";
     char option[] = "1) $1000 2) $5000 3) $10000";
+    
+    draw_rectangle(30, 103, 150, 50, 0x0);
 
     plot_string(MESSAGE_X, MESSAGE_Y, message);
     plot_string(MESSAGE_X, MESSAGE_Y + 2, line);
