@@ -10,8 +10,10 @@
 #include <stdlib.h>
 #define UNINITIALIZED 0
 #define MAX_STRING_LENGTH 10
-#define PROPERTY 0
-#define CHANCE 1        // ... more for jail, tax and so on
+#define START 0
+#define POLICE 6        
+#define CHANCE 12
+#define JAIL 18
 #define NUM_BOARD_BOX 30    // Not sure about the number of boxes yet
 #define PLAYER_1 1
 #define PLAYER_2 2
@@ -581,6 +583,7 @@ void draw_game_board();
 void draw_game_information();
 void draw_box_name();
 int roll_dice();
+void increment_position1(int diceMove);
 void set_front_back_buffer();
 void draw_line(int x_start, int y_start, int x_end, int y_end, short int color);
 void draw_rectangle(int x, int y, int width, int height, short int color);
@@ -592,7 +595,6 @@ void wait_for_vsync();
 void clear_drawing();
 void wait_for_title_input();
 void wait_for_keyboard_input(unsigned char keycode);
-void wait_for_keyboard_break();
 
 
 int main(void)
@@ -695,33 +697,20 @@ void wait_for_title_input(){
         
         // Check for correct user input
         // Option 1 clicked
-        if (byte3 == 0x16){
-            wait_for_keyboard_break();
+        if (byte2 == 0xF0 && byte1 == 0x16){
             winningMoney = 1000;
         }
         // Option 2 clicked
-        else if (byte3 == 0x1E){
-            wait_for_keyboard_break();
+        else if (byte2 == 0xF0 && byte1 == 0x1E){
             winningMoney = 5000;
         }
         // Option 3 clicked
-        else if (byte3 == 0x26){
-            wait_for_keyboard_break();
+        else if (byte2 == 0xF0 && byte1 == 0x26){
             winningMoney = 10000;
         }
     }
     
     clear_text();
-}
-
-
-/* Wait for the keyboard to exert break code */
-void wait_for_keyboard_break(){
-    volatile int * PS2_ptr = (int *) 0xFF200100;
-    
-    while (*(PS2_ptr) != 0xF0){
-        // Wait
-    }
 }
 
 
@@ -736,28 +725,36 @@ void state_game_screen(){
         
         // User turn
         int diceMove = roll_dice();
-        /*
-       
-        int landType = move_character(diceMove);    // e.g. landType:
-                                                    //      propery = 0
-                                                    //      chance = 1
-                                                    //      jail = 2 ...
-
-        // According action for each landType
-        if (landType = PROPERTY){
-            play_property();        
-            // Property action: ask users if they want to buy or not,
-            // (needs user input), or pay rent if this is someone else's,etc
+        
+        // Player 1's turn
+        if (gameTurn == PLAYER_1){
+            increment_position1(diceMove);
+            
+            // Action according to position
+            if (position1 == START){
+                playerMoney1 += 100;
+            }
+            else if (position1 == POLICE){
+                position1 = JAIL;
+            }
+            else if (position1 == JAIL){
+                // Do nothing
+            }
+            else if (position1 == CHANCE){
+                //display_chance_card();
+            }
         }
-        else if (landType = CHANCE){
-            play_chance();      
-            // Chance action: display a random card with some situation
-            // This will increase/decrease user score
-        }
-
-        //... so on 
-         */ 
+        
+        // *** TODO: ADD PLAYER 2 ***
     }
+}
+
+
+/* Increment position of player 1 */
+void increment_position1(int diceMove){
+    position1 += diceMove;
+    
+    // *** TODO: SHOW ANIMATION ***
 }
 
 
@@ -787,6 +784,8 @@ int roll_dice(){
     // Get random number from 1 to 6
     int diceNum = rand()%6 + 1;
     
+    // *** TODO: SHOW ANIMATION ***
+    
     return diceNum;
 }
 
@@ -811,8 +810,7 @@ void wait_for_keyboard_input(unsigned char keycode){
             byte3 = PS2_data & 0xFF;
         }
         
-        if (byte3 == keycode){
-            wait_for_keyboard_break();
+        if (byte2 == 0xF0 && byte1 == keycode){
             break;
         }
     }  
