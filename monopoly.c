@@ -591,6 +591,7 @@ void swap(int *value1, int *value2);
 void wait_for_vsync();
 void clear_drawing();
 void wait_for_title_input();
+void wait_for_keyboard_input(unsigned char keycode);
 void wait_for_keyboard_break();
 
 
@@ -603,7 +604,6 @@ int main(void)
     
     // Infinite Loop
     while (1){   
-        
         state_title_screen();
         state_game_screen();
         /*
@@ -778,7 +778,21 @@ void draw_status_message(){
 
 /* Roll dice from 1 to 6 */
 int roll_dice(){
+    update_status_message("Press Space to roll dice");
     
+    wait_for_keyboard_input(0x29);
+    
+    update_status_message("Dice rolled!");
+    
+    // Get random number from 1 to 6
+    int diceNum = rand()%6 + 1;
+    
+    return diceNum;
+}
+
+
+/* Wait for the use input from PS/2 keyboard */
+void wait_for_keyboard_input(unsigned char keycode){
     // Local Variable Declaration
     unsigned char byte1 = 0;
     unsigned char byte2 = 0;
@@ -786,9 +800,6 @@ int roll_dice(){
     int PS2_data = 0, RVALID = 0;
     volatile int * PS2_ptr = (int *) 0xFF200100;
     
-    update_status_message("Press Space to roll dice");
-    
-    // Wait for user input
     while (1) {
         PS2_data = *(PS2_ptr);	// read the Data register in the PS/2 port
         RVALID = (PS2_data & 0x8000);	// extract the RVALID field
@@ -800,21 +811,11 @@ int roll_dice(){
             byte3 = PS2_data & 0xFF;
         }
         
-        if (byte3 == 0x16){
+        if (byte3 == keycode){
             wait_for_keyboard_break();
             break;
         }
     }  
-    
-    update_status_message("Dice rolled!");
-    while (1){
-        
-    }
-    
-    // Get random number from 1 to 6
-    int diceNum = rand()%6 + 1;
-    
-    return diceNum;
 }
 
 
