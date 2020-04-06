@@ -574,9 +574,13 @@ void state_title_screen();
 void draw_title_screen();
 void draw_title_message();
 void state_game_screen();
+void draw_game_screen();
+void draw_status_message();
+void update_status_message(char *message);
 void draw_game_board();
 void draw_game_information();
 void draw_box_name();
+int roll_dice();
 void set_front_back_buffer();
 void draw_line(int x_start, int y_start, int x_end, int y_end, short int color);
 void draw_rectangle(int x, int y, int width, int height, short int color);
@@ -683,7 +687,7 @@ void wait_for_title_input(){
         RVALID = (PS2_data & 0x8000);	// extract the RVALID field
         if (RVALID != 0)
         {
-            /* always save the last three bytes received */
+            // Save last 3 bit from PS2 data
             byte1 = byte2;
             byte2 = byte3;
             byte3 = PS2_data & 0xFF;
@@ -727,13 +731,13 @@ void state_game_screen(){
     while ((playerMoney1 < winningMoney) && (playerMoney2 < winningMoney))
     {
         clear_screen();
-        draw_game_board();
-        draw_box_name();
-        draw_game_information();  // Score, highlight property ownership, etc
+        draw_game_screen();
         wait_for_vsync();
-        /*
+        
         // User turn
         int diceMove = roll_dice();
+        /*
+       
         int landType = move_character(diceMove);    // e.g. landType:
                                                     //      propery = 0
                                                     //      chance = 1
@@ -754,6 +758,70 @@ void state_game_screen(){
         //... so on 
          */ 
     }
+}
+
+
+/* Draw/Redraw game screen */
+void draw_game_screen(){
+    draw_game_board();
+    draw_box_name();
+    draw_status_message();
+    draw_game_information();  // Score, highlight property ownership, etc
+}
+
+
+/* Draw status message bar */
+void draw_status_message(){
+    draw_rectangle(95, 184, 120, 14, 0x0);
+}
+
+
+/* Roll dice from 1 to 6 */
+int roll_dice(){
+    
+    // Local Variable Declaration
+    unsigned char byte1 = 0;
+    unsigned char byte2 = 0;
+    unsigned char byte3 = 0;
+    int PS2_data = 0, RVALID = 0;
+    volatile int * PS2_ptr = (int *) 0xFF200100;
+    
+    update_status_message("Press Space to roll dice");
+    
+    // Wait for user input
+    while (1) {
+        PS2_data = *(PS2_ptr);	// read the Data register in the PS/2 port
+        RVALID = (PS2_data & 0x8000);	// extract the RVALID field
+        if (RVALID != 0)
+        {
+            // Save the last three bits from PS2 Data
+            byte1 = byte2;
+            byte2 = byte3;
+            byte3 = PS2_data & 0xFF;
+        }
+        
+        if (byte3 == 0x16){
+            wait_for_keyboard_break();
+            break;
+        }
+    }  
+    
+    update_status_message("Dice rolled!");
+    while (1){
+        
+    }
+    
+    // Get random number from 1 to 6
+    int diceNum = rand()%6 + 1;
+    
+    return diceNum;
+}
+
+
+/* Update status message */
+void update_status_message(char *message){
+    plot_string(27, 47, "                             ");
+    plot_string(27, 47, message);
 }
 
 
