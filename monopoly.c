@@ -25,18 +25,17 @@ bool enableWinningMoneyInput = false;
 bool enableRestartInput = false;
 int winningMoney = UNINITIALIZED;
 int board[NUM_BOARD_BOX] = {0}; // not sure when to use, but should be useful
+int gameTurn = PLAYER_1;
 
 // Player 1 information
 double playerMoney1 = 0;
 int position1 = 0;
-bool playerTurn1 = true; 
 int property1[NUM_BOARD_BOX] = {0}; // Property ownership for player1
 
         
 // Player 2 information
 double playerMoney2 = 0;
 int position2 = 0;
-bool playerTurn2 = false;
 int property2[NUM_BOARD_BOX] = {0}; // Property ownership for player2
 
 
@@ -637,7 +636,7 @@ void wait_for_title_input(){
     
     // Get PS/2 Base Address
     volatile int * PS2_ptr = (int *) 0xFF200100;
-
+    
     // Continuously read user input
     while (winningMoney == UNINITIALIZED) {
         PS2_data = *(PS2_ptr);	// read the Data register in the PS/2 port
@@ -720,7 +719,7 @@ void state_game_screen(){
 /* Draw game information */
 void draw_game_information(){
     // Draw rectangle at the background
-    draw_rectangle(43, 43, 100, 40, 0x0);
+    draw_rectangle(43, 43, 100, 50, 0x0);
     
     // Set character arrays
     // Winning money
@@ -738,10 +737,23 @@ void draw_game_information(){
     char player2_money_info[] = "Player 2: ";
     strcat(player2_money_info, itoa(playerMoney2, string_player2, 10));
     
+    // Turn information
+    char turn_info1[] = "==Player 1's turn==";
+    char turn_info2[] = "==Player 2's turn==";
+
+    
     // Plot information as text
     plot_string(13, 13, winning_money_info);
     plot_string(13, 15, player1_money_info);
     plot_string(13, 17, player2_money_info);
+    
+    // Plot turn info
+    if (gameTurn == PLAYER_1){
+        plot_string(13, 21, turn_info1);
+    }
+    else if (gameTurn == PLAYER_2){
+        plot_string(13, 21, turn_info2);\
+    }
 }
 
 
@@ -767,8 +779,10 @@ void draw_game_board(){
 
 
 /* Clear screen with black color */
+// Code reference: https://piazza.com/class/k4x9gip3a1c3md?cid=461
 void clear_screen()
 {
+    /*
     // Traverse through entire screen
     for (int y = 0; y < 240; ++y)
     {
@@ -778,6 +792,9 @@ void clear_screen()
             plot_pixel(x, y, 0x0);
         }
     }
+     */
+    
+    memset((short int*) pixel_buffer_start, 0, 245760);
 }
 
 
