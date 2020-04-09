@@ -1227,6 +1227,7 @@ void determineWinner();
 void state_winner_screen();
 void draw_winner_screen();
 void draw_winner_message();
+void clearData();
 
 
 
@@ -1253,7 +1254,29 @@ void state_winner_screen(){
     wait_for_vsync();
     
     wait_for_keyboard_input(0x2D);  // R
+    
+    clearData();
 }
+
+
+/* Clear previous data when game is over */
+void clearData(){
+    winner = UNINITIALIZED;
+    winningMoney = UNINITIALIZED;
+    
+    playerMoney1 = 500;
+    playerMoney2 = 500;
+    
+    position1 = 0;
+    position2 = 0;
+    
+    gameTurn = PLAYER_1;
+    
+    for (int i=0; i < NUM_BOARD_BOX; ++i){
+        property1[i] = 0;
+        property2[i] = 0;
+    }
+} 
 
 
 /* Draw winner message */
@@ -1430,7 +1453,7 @@ void state_game_screen(){
                 display_start_dialog();
                 playerMoney2 += 100;
             }
-            else if (position1 == POLICE){
+            else if (position2 == POLICE){
                 display_police_dialog();
                 position2 = JAIL;
                 draw_game_screen();
