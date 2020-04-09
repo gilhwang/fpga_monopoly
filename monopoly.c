@@ -962,6 +962,7 @@ int roll_dice();
 void draw_dice(int diceNumber);
 void create_delay(double second);
 void increment_position1(int diceMove);
+void increment_position2(int diceMove);
 void set_front_back_buffer();
 void draw_line(int x_start, int y_start, int x_end, int y_end, short int color);
 void draw_rectangle(int x, int y, int width, int height, short int color);
@@ -979,6 +980,7 @@ void display_start_dialog();
 void display_police_dialog();
 void display_chance_dialog();
 void display_property_dialog1();
+void display_property_dialog2();
 void position_character();
 void highlight_box();
 
@@ -1142,12 +1144,102 @@ void state_game_screen(){
             }
         }
         
-        // *** TODO: ADD PLAYER 2 ***
+        if (gameTurn == PLAYER_2){
+            increment_position2(diceMove);
+            
+            // Action according to position
+            if (position2 == START){
+                display_start_dialog();
+                playerMoney2 += 100;
+            }
+            else if (position1 == POLICE){
+                display_police_dialog();
+                position2 = JAIL;
+                draw_game_screen();
+                wait_for_vsync();    
+            }
+            else if (position2 == JAIL){
+                // Do nothing
+            }
+            else if (position2 == CHANCE){
+                display_chance_dialog();
+            }
+            
+            // PROPERTY
+            else{
+                display_property_dialog2();
+            }
+        }
+        
+        // Flip game turn
+        if (gameTurn == PLAYER_1){
+            gameTurn = PLAYER_2;
+        }
+        else if (gameTurn == PLAYER_2){
+            gameTurn = PLAYER_1;
+        }
     }
 }
 
 
-/* Dialog box for property */
+/* Dialog box for property: player 2 */
+void display_property_dialog2(){
+    display_dialog();
+
+    // Get price
+    char price[] = "Price: $";
+    char string_price[4];
+    strcat(price, itoa(box_price[position2], string_price, 10));
+    
+    // Not occupied yet
+    if (property1[position2] == 0){
+        plot_string(12, 25, box_name[position2]);
+        plot_string(12, 27, "Would you like to buy?");
+        plot_string(12, 29, price);
+
+        update_status_message("Y = buy | N = Cancel");
+
+        bool yes = wait_for_two_keyboard_input(0x35, 0x31);
+
+
+        if (yes){
+            if (playerMoney2 >= box_price[position2]){
+                property2[position2] = 1;
+                playerMoney2 -= box_price[position2];  
+            }
+            else{
+                update_status_message("Not enough money!");
+            }
+        }
+
+
+        // Clear text drawn
+        plot_string(12, 25, "                      ");
+        plot_string(12, 27, "                      ");
+        plot_string(12, 29, "                      ");
+    }
+    
+    // Property occupied
+    else{
+        plot_string(12, 25, box_name[position2]);
+        plot_string(12, 27, "Need to pay rent:");
+        plot_string(12, 29, price);
+        
+        update_status_message("Press space to pay");
+         
+        wait_for_keyboard_input(0x29); 
+        
+        playerMoney2 -= box_price[position2];
+        
+        // Clear text drawn
+        plot_string(12, 25, "                      ");
+        plot_string(12, 27, "                      ");
+        plot_string(12, 29, "                      ");
+    }
+}
+
+
+/* Dialog box for property : player 1*/
 void display_property_dialog1(){
     display_dialog();
 
@@ -1156,30 +1248,51 @@ void display_property_dialog1(){
     char string_price[4];
     strcat(price, itoa(box_price[position1], string_price, 10));
     
-    plot_string(12, 25, box_name[position1]);
-    plot_string(12, 27, "Would you like to buy?");
-    plot_string(12, 29, price);
-    
-    update_status_message("Y = buy | N = Cancel");
-  
-    bool yes = wait_for_two_keyboard_input(0x35, 0x31);
-    
-    
-    if (yes){
-        if (playerMoney1 >= box_price[position1]){
-            property1[position1] = 1;
-            playerMoney1 -= box_price[position1];  
-        }
-        else{
-            update_status_message("Not enough money!");
-        }
-    }
-     
+    // Not occupied yet
+    if (property2[position1] == 0){
+        plot_string(12, 25, box_name[position1]);
+        plot_string(12, 27, "Would you like to buy?");
+        plot_string(12, 29, price);
 
-    // Clear text drawn
-    plot_string(12, 25, "                      ");
-    plot_string(12, 27, "                      ");
-    plot_string(12, 29, "                      ");
+        update_status_message("Y = buy | N = Cancel");
+
+        bool yes = wait_for_two_keyboard_input(0x35, 0x31);
+
+
+        if (yes){
+            if (playerMoney1 >= box_price[position1]){
+                property1[position1] = 1;
+                playerMoney1 -= box_price[position1];  
+            }
+            else{
+                update_status_message("Not enough money!");
+            }
+        }
+
+
+        // Clear text drawn
+        plot_string(12, 25, "                      ");
+        plot_string(12, 27, "                      ");
+        plot_string(12, 29, "                      ");
+    }
+    
+    // Property occupied
+    else{
+        plot_string(12, 25, box_name[position1]);
+        plot_string(12, 27, "Need to pay rent:");
+        plot_string(12, 29, price);
+        
+        update_status_message("Press space to pay");
+         
+        wait_for_keyboard_input(0x29); 
+        
+        playerMoney1 -= box_price[position1];
+        
+        // Clear text drawn
+        plot_string(12, 25, "                      ");
+        plot_string(12, 27, "                      ");
+        plot_string(12, 29, "                      ");
+    }
 }
 
 
@@ -1337,13 +1450,33 @@ void increment_position1(int diceMove){
 }
 
 
+/* Increment position of player 2 */
+void increment_position2(int diceMove){
+    for (int i = 1; i <= diceMove; ++i){
+        if (position1 == 23){
+            position2 = 0;
+        }
+        else{
+            position2++;
+        }
+        
+        // Move character
+        create_delay(0.25);
+        draw_game_screen();
+        wait_for_vsync();
+    }
+}
+
+
 /* Posiiton character  in the board*/                                                                    /********************************/
 void position_character(){
     // Local Variable Declaration
     short int color = 0xE000;
+    short int color2 = 0x001F;
     int width = 15;
     int height = 15;
     
+    // Player 1
     if (position1 == 0){
         draw_rectangle(302, 210, width, height, color);
     }
@@ -1417,6 +1550,81 @@ void position_character(){
         draw_rectangle(259, 216, width, height, color);
     }
     
+    
+    // Player 2
+    if (position2 == 0){
+        draw_rectangle(302, 210, width, height, color2);
+    }
+    else if (position2 == 1){
+        draw_rectangle(302, 179, width, height, color2);
+    }
+    else if (position2 == 2){
+        draw_rectangle(302, 149, width, height, color2);
+    }
+    else if (position2 == 3){
+        draw_rectangle(302, 117, width, height, color2);
+    }
+    else if (position2 == 4){
+        draw_rectangle(302, 83, width, height, color2);
+    }
+    else if (position2 == 5){
+        draw_rectangle(302, 52, width, height, color2);
+    }
+    else if (position2 == 6){
+        draw_rectangle(302, 16, width, height, color2);
+    }
+    else if (position2 == 7){
+        draw_rectangle(260, 16, width, height, color2);
+    }
+    else if (position2 == 8){
+        draw_rectangle(212, 16, width, height, color2);
+    }
+    else if (position2 == 9){
+        draw_rectangle(164, 16, width, height, color2);
+    }
+    else if (position2 == 10){
+        draw_rectangle(116, 16, width, height, color2);
+    }
+    else if (position2 == 11){
+        draw_rectangle(68, 16, width, height, color2);
+    }
+    else if (position2 == 12){
+        draw_rectangle(22, 16, width, height, color2);
+    }
+    else if (position2 == 13){
+        draw_rectangle(22, 53, width, height, color2);
+    }
+    else if (position2 == 14){
+        draw_rectangle(22, 85, width, height, color2);
+    }
+    else if (position2 == 15){
+        draw_rectangle(22, 117, width, height, color2);
+    }
+    else if (position2 == 16){
+        draw_rectangle(22, 149, width, height, color2);
+    }
+    else if (position2 == 17){
+        draw_rectangle(22, 182, width, height, color2);
+    }
+    else if (position2 == 18){
+        draw_rectangle(22, 216, width, height, color2);
+    }
+    else if (position2 == 19){
+        draw_rectangle(69, 216, width, height, color2);
+    }
+    else if (position2 == 20){
+        draw_rectangle(117, 216, width, height, color2);
+    }
+    else if (position2 == 21){
+        draw_rectangle(164, 216, width, height, color2);
+    }
+    else if (position2 == 22){
+        draw_rectangle(215, 216, width, height, color2);
+    }
+    else if (position2 == 23){
+        draw_rectangle(259, 216, width, height, color2);
+    }
+    
 }
 
 
@@ -1437,6 +1645,7 @@ void highlight_box(){
     short int color1 = 0xE000;
     short int color2 = 0x001F;
     
+    // Player 1's property
     if (property1[1] == 1){
         draw_line(280, 171, 280, 196, color1);
     }
@@ -1499,6 +1708,72 @@ void highlight_box(){
     }
      if (property1[23] == 1){
         draw_line(236, 200, 85, 276, color1);
+    }
+    
+    
+    // Player 2's property
+    if (property2[1] == 1){
+        draw_line(280, 171, 280, 196, color2);
+    }
+    if (property2[2] == 1){
+        draw_line(280, 140, 280, 166, color2); 
+    }
+    if (property2[3] == 1){
+        draw_line(280, 107, 280, 133, color2); 
+    }
+     if (property2[4] == 1){
+        draw_line(280, 75, 280, 101, color2);
+    }
+     if (property2[5] == 1){
+        draw_line(280, 44, 280, 69, color2);
+    }
+    
+     if (property2[7] == 1){
+        draw_line(277, 40, 236, 40, color2);
+    }
+     if (property2[8] == 1){
+        draw_line(230, 40, 188, 40, color2);
+    }
+     if (property2[9] == 1){
+        draw_line(182, 40, 139, 40, color2);
+    }
+     if (property2[10] == 1){
+        draw_line(134, 40, 90, 40, color2);
+    }
+     if (property2[11] == 1){
+        draw_line(86, 40, 43, 40, color2);
+    }
+    
+     if (property2[13] == 1){
+        draw_line(40, 43, 40, 68, color2);
+    }
+     if (property2[14] == 1){
+        draw_line(40, 75, 40, 101, color2);
+    }
+     if (property2[15] == 1){
+        draw_line(40, 107, 40, 133, color2);
+    }
+     if (property2[16] == 1){
+        draw_line(40, 139, 40, 166, color2);
+    }
+     if (property2[17] == 1){
+        draw_line(40, 172, 40, 196, color2);
+    }
+    
+     if (property2[19] == 1){
+        draw_line(43, 200, 85, 200, color2);
+    }
+     if (property2[20] == 1){
+        draw_line(91, 200, 133, 200, color2);
+    }
+     if (property2[21] == 1){
+        draw_line(139, 200, 180, 200, color2);
+    }
+     if (property2[22] == 1){
+        draw_line(187, 200, 230, 200, color2);
+    }
+     if (property2[23] == 1){
+        draw_line(236, 200, 85, 276, color2);
     }
     
 }
