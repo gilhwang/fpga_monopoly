@@ -1997,8 +1997,8 @@ void draw_game_screen(){
 /* Highlight ownership of box */
 void highlight_box(){
     // Local Variable Declaration
-    short int color1 = 0xE000;
-    short int color2 = 0x001F;
+    short int color1 = 0xF800;
+    short int color2 = 0x07FF;
     
     // Player 1's property
     if (property1[1] == 1){
