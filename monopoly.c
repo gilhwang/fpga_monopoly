@@ -860,6 +860,7 @@ bool enableWinningMoneyInput = false;
 bool enableRestartInput = false;
 int winningMoney = UNINITIALIZED;
 int gameTurn = PLAYER_1;
+int winner = UNINITIALIZED;
 
 // Locations
 char box_name[NUM_BOARD_BOX][MAX_STRING_LENGTH] = 
@@ -983,6 +984,8 @@ void display_property_dialog1();
 void display_property_dialog2();
 void position_character();
 void highlight_box();
+void determineWinner();
+void state_winner_screen();
 
 
 
@@ -996,6 +999,7 @@ int main(void)
     while (1){   
         state_title_screen();
         state_game_screen();
+        state_winner_screen();
         /*
         determineWinner();   
         
@@ -1016,6 +1020,15 @@ int main(void)
          */ 
     }
    
+}
+
+/* State of winner screen */
+void state_winner_screen(){
+    clear_text();
+    clear_screen();
+    wait_for_vsync();
+    
+    wait_for_keyboard_input(0x2D);  // R
 }
 
 
@@ -1108,7 +1121,7 @@ void state_game_screen(){
     wait_for_vsync();
         
     // Game Screen
-    while ((playerMoney1 < winningMoney) && (playerMoney2 < winningMoney))
+    while (winner == UNINITIALIZED)
     {
         draw_game_screen();
         wait_for_vsync();
@@ -1178,6 +1191,28 @@ void state_game_screen(){
         else if (gameTurn == PLAYER_2){
             gameTurn = PLAYER_1;
         }
+        
+        determineWinner();
+    }
+}
+
+
+/* Check if there is a winner */
+void determineWinner(){
+    // Wins when reaching the winning value
+    if (playerMoney1 >= winningMoney){
+        winner = PLAYER_1;
+    }
+    else if (playerMoney2 >= winningMoney){
+        winner = PLAYER_2;
+    }
+    
+    // Lose when reaching 0 money
+    if (playerMoney1 <= 0){
+        winner = PLAYER_2;
+    }
+    else if (playerMoney2 <= 0){
+        winner = PLAYER_1;
     }
 }
 
@@ -1192,7 +1227,7 @@ void display_property_dialog2(){
     strcat(price, itoa(box_price[position2], string_price, 10));
     
     // Not occupied yet
-    if (property1[position2] == 0){
+    if (property1[position2] == 0 && property2[position2] == 0){
         plot_string(12, 25, box_name[position2]);
         plot_string(12, 27, "Would you like to buy?");
         plot_string(12, 29, price);
@@ -1220,16 +1255,33 @@ void display_property_dialog2(){
     }
     
     // Property occupied
-    else{
+    else if (property1[position2] == 1){
         plot_string(12, 25, box_name[position2]);
         plot_string(12, 27, "Need to pay rent:");
         plot_string(12, 29, price);
         
-        update_status_message("Press space to pay");
+        update_status_message("Press Space to pay");
          
         wait_for_keyboard_input(0x29); 
         
         playerMoney2 -= box_price[position2];
+        playerMoney1 += box_price[position2];
+        
+        // Clear text drawn
+        plot_string(12, 25, "                      ");
+        plot_string(12, 27, "                      ");
+        plot_string(12, 29, "                      ");
+    }
+    
+    // Self owned
+    else{
+        plot_string(12, 25, box_name[position2]);
+        plot_string(12, 27, "You own here");
+        plot_string(12, 29, price);
+        
+        update_status_message("Press Space to proceed");
+         
+        wait_for_keyboard_input(0x29); 
         
         // Clear text drawn
         plot_string(12, 25, "                      ");
@@ -1249,7 +1301,7 @@ void display_property_dialog1(){
     strcat(price, itoa(box_price[position1], string_price, 10));
     
     // Not occupied yet
-    if (property2[position1] == 0){
+    if (property2[position1] == 0 && property1[position1] == 0){
         plot_string(12, 25, box_name[position1]);
         plot_string(12, 27, "Would you like to buy?");
         plot_string(12, 29, price);
@@ -1277,16 +1329,31 @@ void display_property_dialog1(){
     }
     
     // Property occupied
-    else{
+    else if (property2[position1] == 1){
         plot_string(12, 25, box_name[position1]);
         plot_string(12, 27, "Need to pay rent:");
         plot_string(12, 29, price);
         
-        update_status_message("Press space to pay");
+        update_status_message("Press Space to pay");
          
         wait_for_keyboard_input(0x29); 
         
         playerMoney1 -= box_price[position1];
+        playerMoney2 += box_price[position1];
+        
+        // Clear text drawn
+        plot_string(12, 25, "                      ");
+        plot_string(12, 27, "                      ");
+        plot_string(12, 29, "                      ");
+    }
+    else{
+        plot_string(12, 25, box_name[position1]);
+        plot_string(12, 27, "You own here");
+        plot_string(12, 29, price);
+        
+        update_status_message("Press Spaces to proceed");
+         
+        wait_for_keyboard_input(0x29); 
         
         // Clear text drawn
         plot_string(12, 25, "                      ");
@@ -1362,11 +1429,11 @@ void display_chance_dialog(){
         plot_string(12, 29, "                      ");
         
         if (gameTurn == PLAYER_1){
-            playerMoney1 += 50;
+            playerMoney1 += 100;
             position1 = 0;
         }
         else if (gameTurn == PLAYER_2){
-            playerMoney2 += 50;
+            playerMoney2 += 100;
             position2 = 0;
         } 
         
@@ -1443,7 +1510,7 @@ void increment_position1(int diceMove){
         }
         
         // Move character
-        create_delay(0.25);
+        //create_delay(0.25);
         draw_game_screen();
         wait_for_vsync();
     }
@@ -1461,7 +1528,7 @@ void increment_position2(int diceMove){
         }
         
         // Move character
-        create_delay(0.25);
+        //create_delay(0.25);
         draw_game_screen();
         wait_for_vsync();
     }
@@ -1798,7 +1865,7 @@ int roll_dice(){
     
     draw_dice(diceNum);
     
-    create_delay(0.5);
+    //create_delay(0.5);
     
     return diceNum;
 }
