@@ -8,13 +8,14 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
+
 #define UNINITIALIZED 0
 #define MAX_STRING_LENGTH 10
 #define START 0
 #define POLICE 6        
 #define CHANCE 12
 #define JAIL 18
-#define NUM_BOARD_BOX 30    // Not sure about the number of boxes yet
+#define NUM_BOARD_BOX 24
 #define PLAYER_1 1
 #define PLAYER_2 2
 
@@ -858,11 +859,10 @@ bool restart = false;
 bool enableWinningMoneyInput = false;
 bool enableRestartInput = false;
 int winningMoney = UNINITIALIZED;
-int board[NUM_BOARD_BOX] = {0}; // not sure when to use, but should be useful
 int gameTurn = PLAYER_1;
 
 // Locations
-char box_name[24][MAX_STRING_LENGTH] = 
+char box_name[NUM_BOARD_BOX][MAX_STRING_LENGTH] = 
 {
     "Start",
     
@@ -895,6 +895,41 @@ char box_name[24][MAX_STRING_LENGTH] =
     "Lane",
     "Mayfair",
     "Liverpool"
+};
+
+int box_price[NUM_BOARD_BOX] = 
+{
+    0,
+    
+    50,
+    50,
+    70,
+    70,
+    80,
+    
+    0,
+    
+    100,
+    100,
+    150,
+    150,
+    175,
+    
+    0,
+    
+    200,
+    200,
+    230,
+    230,
+    250,
+    
+    0,
+    
+    270,
+    270,
+    280,
+    290,
+    300
 };
 
 // Player 1 information
@@ -938,10 +973,14 @@ void wait_for_vsync();
 void clear_drawing();
 void wait_for_title_input();
 void wait_for_keyboard_input(unsigned char keycode);
+bool wait_for_two_keyboard_input(unsigned char yes_code, unsigned char no_code);
 void display_dialog();
 void display_start_dialog();
 void display_police_dialog();
-void position_character1();
+void display_chance_dialog();
+void display_property_dialog1();
+void position_character();
+void highlight_box();
 
 
 
@@ -950,7 +989,6 @@ int main(void)
     
     // Initial Setting
     set_front_back_buffer();
-    //interruptSetting();
     
     // Infinite Loop
     while (1){   
@@ -1064,12 +1102,12 @@ void wait_for_title_input(){
 
 /* Action for game screen */
 void state_game_screen(){
+    draw_game_screen();
+    wait_for_vsync();
+        
     // Game Screen
     while ((playerMoney1 < winningMoney) && (playerMoney2 < winningMoney))
     {
-        draw_game_screen();
-        wait_for_vsync();
-        
         draw_game_screen();
         wait_for_vsync();
         
@@ -1085,7 +1123,7 @@ void state_game_screen(){
                 display_start_dialog();
                 playerMoney1 += 100;
             }
-            else if (1 || position1 == POLICE){
+            else if (position1 == POLICE){
                 display_police_dialog();
                 position1 = JAIL;
                 draw_game_screen();
@@ -1095,11 +1133,132 @@ void state_game_screen(){
                 // Do nothing
             }
             else if (position1 == CHANCE){
-                //display_chance_card();
+                display_chance_dialog();
+            }
+            
+            // PROPERTY
+            else{
+                display_property_dialog1();
             }
         }
         
         // *** TODO: ADD PLAYER 2 ***
+    }
+}
+
+
+/* Dialog box for property */
+void display_property_dialog1(){
+    display_dialog();
+
+    // Get price
+    char price[] = "Price: $";
+    char string_price[4];
+    strcat(price, itoa(box_price[position1], string_price, 10));
+    
+    plot_string(12, 25, box_name[position1]);
+    plot_string(12, 27, "Would you like to buy?");
+    plot_string(12, 29, price);
+    
+    update_status_message("Y = buy | N = Cancel");
+  
+    bool yes = wait_for_two_keyboard_input(0x35, 0x31);
+    
+    
+    if (yes){
+        if (playerMoney1 >= box_price[position1]){
+            property1[position1] = 1;
+            playerMoney1 -= box_price[position1];  
+        }
+        else{
+            update_status_message("Not enough money!");
+        }
+    }
+     
+
+    // Clear text drawn
+    plot_string(12, 25, "                      ");
+    plot_string(12, 27, "                      ");
+    plot_string(12, 29, "                      ");
+}
+
+
+/* Dialog box for chance */
+void display_chance_dialog(){
+    // Show dialog background
+    display_dialog();
+    
+    // Pick option randomly
+    int option = rand()%3 + 1;  // Range: 1 - 3
+    
+    if (option == 1){
+        plot_string(12, 25, "[CHANCE]");
+        plot_string(12, 27, "You need to donate!");
+        plot_string(12, 29, "== -$50 ==");
+
+        update_status_message("Press space to close");
+
+        wait_for_keyboard_input(0x29);
+
+        // Clear text drawn
+        plot_string(12, 25, "                      ");
+        plot_string(12, 27, "                      ");
+        plot_string(12, 29, "                      ");
+        
+        if (gameTurn == PLAYER_1){
+            playerMoney1 -= 50;
+        }
+        else if (gameTurn == PLAYER_2){
+            playerMoney2 -= 50;
+        }
+    }
+    else if (option == 2){
+        plot_string(12, 25, "[CHANCE]");
+        plot_string(12, 27, "You won a scholarship!");
+        plot_string(12, 29, "== +$50 ==");
+
+        update_status_message("Press space to close");
+
+        wait_for_keyboard_input(0x29);
+
+        // Clear text drawn
+        plot_string(12, 25, "                      ");
+        plot_string(12, 27, "                      ");
+        plot_string(12, 29, "                      ");
+        
+        if (gameTurn == PLAYER_1){
+            playerMoney1 += 50;
+        }
+        else if (gameTurn == PLAYER_2){
+            playerMoney2 += 50;
+        } 
+    }
+    
+    else{
+        plot_string(12, 25, "[CHANCE]");
+        plot_string(12, 27, "Move to start!!");
+        plot_string(12, 29, "== +$100 ==");
+
+        update_status_message("Press space to close");
+
+        wait_for_keyboard_input(0x29);
+
+        // Clear text drawn
+        plot_string(12, 25, "                      ");
+        plot_string(12, 27, "                      ");
+        plot_string(12, 29, "                      ");
+        
+        if (gameTurn == PLAYER_1){
+            playerMoney1 += 50;
+            position1 = 0;
+        }
+        else if (gameTurn == PLAYER_2){
+            playerMoney2 += 50;
+            position2 = 0;
+        } 
+        
+        draw_game_screen();
+        wait_for_vsync();
     }
 }
 
@@ -1146,7 +1305,7 @@ void display_start_dialog(){
     
     plot_string(12, 25, "[Starting Point]");
     plot_string(12, 27, "You earned salary!");
-    plot_string(12, 29, "== +100 ==");
+    plot_string(12, 29, "== +$100 ==");
  
     update_status_message("Press space to close");
     
@@ -1178,8 +1337,8 @@ void increment_position1(int diceMove){
 }
 
 
-/* Posiiton character in the board*/                                                                    /********************************/
-void position_character1(){
+/* Posiiton character  in the board*/                                                                    /********************************/
+void position_character(){
     // Local Variable Declaration
     short int color = 0xE000;
     int width = 15;
@@ -1266,8 +1425,82 @@ void draw_game_screen(){
     draw_game_board();
     draw_box_name();
     draw_status_message();
-    position_character1();
+    position_character();
+    highlight_box();
     draw_game_information();  // Score, highlight property ownership, etc
+}
+
+
+/* Highlight ownership of box */
+void highlight_box(){
+    // Local Variable Declaration
+    short int color1 = 0xE000;
+    short int color2 = 0x001F;
+    
+    if (property1[1] == 1){
+        draw_line(280, 171, 280, 196, color1);
+    }
+    if (property1[2] == 1){
+        draw_line(280, 140, 280, 166, color1); 
+    }
+    if (property1[3] == 1){
+        draw_line(280, 107, 280, 133, color1); 
+    }
+     if (property1[4] == 1){
+        draw_line(280, 75, 280, 101, color1);
+    }
+     if (property1[5] == 1){
+        draw_line(280, 44, 280, 69, color1);
+    }
+    
+     if (property1[7] == 1){
+        draw_line(277, 40, 236, 40, color1);
+    }
+     if (property1[8] == 1){
+        draw_line(230, 40, 188, 40, color1);
+    }
+     if (property1[9] == 1){
+        draw_line(182, 40, 139, 40, color1);
+    }
+     if (property1[10] == 1){
+        draw_line(134, 40, 90, 40, color1);
+    }
+     if (property1[11] == 1){
+        draw_line(86, 40, 43, 40, color1);
+    }
+    
+     if (property1[13] == 1){
+        draw_line(40, 43, 40, 68, color1);
+    }
+     if (property1[14] == 1){
+        draw_line(40, 75, 40, 101, color1);
+    }
+     if (property1[15] == 1){
+        draw_line(40, 107, 40, 133, color1);
+    }
+     if (property1[16] == 1){
+        draw_line(40, 139, 40, 166, color1);
+    }
+     if (property1[17] == 1){
+        draw_line(40, 172, 40, 196, color1);
+    }
+    
+     if (property1[19] == 1){
+        draw_line(43, 200, 85, 200, color1);
+    }
+     if (property1[20] == 1){
+        draw_line(91, 200, 133, 200, color1);
+    }
+     if (property1[21] == 1){
+        draw_line(139, 200, 180, 200, color1);
+    }
+     if (property1[22] == 1){
+        draw_line(187, 200, 230, 200, color1);
+    }
+     if (property1[23] == 1){
+        draw_line(236, 200, 85, 276, color1);
+    }
+    
 }
 
 
@@ -1442,6 +1675,42 @@ void wait_for_keyboard_input(unsigned char keycode){
 }
 
 
+/* Wait for user input from PS/2 keyboard while distinguishing yes/no signal */
+// Reference: DE1-SoC Documentation example code
+bool wait_for_two_keyboard_input(unsigned char yes_code, unsigned char no_code){
+    // Local Variable Declaration
+    unsigned char byte1 = 0;
+    unsigned char byte2 = 0;
+    unsigned char byte3 = 0;
+    int PS2_data = 0, RVALID = 0;
+    volatile int * PS2_ptr = (int *) 0xFF200100;
+    
+    while (1) {
+        PS2_data = *(PS2_ptr);	
+        RVALID = (PS2_data & 0x8000);	
+        if (RVALID != 0)
+        {
+            // Save the last three bits from PS2 Data
+            byte1 = byte2;
+            byte2 = byte3;
+            byte3 = PS2_data & 0xFF;
+        }
+        
+        // Yes code
+        if (byte2 == 0xF0 && byte1 == yes_code){
+            return true;
+        }
+        
+        // No code
+        if (byte2 == 0xF0 && byte1 == no_code){
+            return false;
+        }
+    }  
+    
+    return false;
+}
+
+
 /* Update status message */
 void update_status_message(char *message){
     plot_string(27, 47, "                             ");
@@ -1489,17 +1758,17 @@ void draw_game_information(){
     // Set character arrays
     // Winning money
     char string_winning[5];
-    char winning_money_info[] = "Winning Money: ";
+    char winning_money_info[] = "Winning Money: $";
     strcat(winning_money_info, itoa(winningMoney, string_winning, 10));
     
     // Player 1 Money
     char string_player1[5];
-    char player1_money_info[] = "Player 1: ";
+    char player1_money_info[] = "Player 1: $";
     strcat(player1_money_info, itoa(playerMoney1, string_player1, 10));
     
     // Player 2 Money
     char string_player2[5];
-    char player2_money_info[] = "Player 2: ";
+    char player2_money_info[] = "Player 2: $";
     strcat(player2_money_info, itoa(playerMoney2, string_player2, 10));
     
     // Turn information
@@ -1509,7 +1778,9 @@ void draw_game_information(){
     
     // Plot information as text
     plot_string(13, 13, winning_money_info);
+    plot_string(13, 15, "                ");
     plot_string(13, 15, player1_money_info);
+    plot_string(13, 17, "                ");
     plot_string(13, 17, player2_money_info);
     
     // Plot turn info
