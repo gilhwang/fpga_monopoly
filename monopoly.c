@@ -925,7 +925,7 @@ void draw_game_information();
 void draw_box_name();
 int roll_dice();
 void draw_dice(int diceNumber);
-void create_delay();
+void create_delay(double second);
 void increment_position1(int diceMove);
 void set_front_back_buffer();
 void draw_line(int x_start, int y_start, int x_end, int y_end, short int color);
@@ -940,6 +940,7 @@ void wait_for_title_input();
 void wait_for_keyboard_input(unsigned char keycode);
 void display_dialog();
 void display_start_dialog();
+void position_character1();
 
 
 
@@ -1099,6 +1100,12 @@ void state_game_screen(){
 }
 
 
+/* Draw character */
+void draw_character(int x, int y, short int color){
+
+}
+
+
 // Display dialog with animation
 void display_dialog(){
     // Local Variable Declaration
@@ -1139,7 +1146,93 @@ void increment_position1(int diceMove){
         }
         
         // Move character
+        create_delay(0.25);
+        draw_game_screen();
+        wait_for_vsync();
     }
+}
+
+
+/* Posiiton character in the board*/                                                                    /********************************/
+void position_character1(){
+    // Local Variable Declaration
+    short int color = 0xE000;
+    int width = 15;
+    int height = 15;
+    
+    if (position1 == 0){
+        draw_rectangle(302, 210, width, height, color);
+    }
+    else if (position1 == 1){
+        draw_rectangle(302, 179, width, height, color);
+    }
+    else if (position1 == 2){
+        draw_rectangle(302, 149, width, height, color);
+    }
+    else if (position1 == 3){
+        draw_rectangle(302, 117, width, height, color);
+    }
+    else if (position1 == 4){
+        draw_rectangle(302, 83, width, height, color);
+    }
+    else if (position1 == 5){
+        draw_rectangle(302, 52, width, height, color);
+    }
+    else if (position1 == 6){
+        draw_rectangle(302, 16, width, height, color);
+    }
+    else if (position1 == 7){
+        draw_rectangle(260, 16, width, height, color);
+    }
+    else if (position1 == 8){
+        draw_rectangle(212, 16, width, height, color);
+    }
+    else if (position1 == 9){
+        draw_rectangle(164, 16, width, height, color);
+    }
+    else if (position1 == 10){
+        draw_rectangle(116, 16, width, height, color);
+    }
+    else if (position1 == 11){
+        draw_rectangle(68, 16, width, height, color);
+    }
+    else if (position1 == 12){
+        draw_rectangle(22, 16, width, height, color);
+    }
+    else if (position1 == 13){
+        draw_rectangle(22, 53, width, height, color);
+    }
+    else if (position1 == 14){
+        draw_rectangle(22, 85, width, height, color);
+    }
+    else if (position1 == 15){
+        draw_rectangle(22, 117, width, height, color);
+    }
+    else if (position1 == 16){
+        draw_rectangle(22, 149, width, height, color);
+    }
+    else if (position1 == 17){
+        draw_rectangle(22, 182, width, height, color);
+    }
+    else if (position1 == 18){
+        draw_rectangle(22, 216, width, height, color);
+    }
+    else if (position1 == 19){
+        draw_rectangle(69, 216, width, height, color);
+    }
+    else if (position1 == 20){
+        draw_rectangle(117, 216, width, height, color);
+    }
+    else if (position1 == 21){
+        draw_rectangle(164, 216, width, height, color);
+    }
+    else if (position1 == 22){
+        draw_rectangle(215, 216, width, height, color);
+    }
+    else if (position1 == 23){
+        draw_rectangle(259, 216, width, height, color);
+    }
+    
 }
 
 
@@ -1148,6 +1241,7 @@ void draw_game_screen(){
     draw_game_board();
     draw_box_name();
     draw_status_message();
+    position_character1();
     draw_game_information();  // Score, highlight property ownership, etc
 }
 
@@ -1171,7 +1265,7 @@ int roll_dice(){
     
     draw_dice(diceNum);
     
-    create_delay();
+    create_delay(0.5);
     
     return diceNum;
 }
@@ -1179,10 +1273,10 @@ int roll_dice(){
 
 /* Generate delay */
 /* Reference: DE1-SoC Computer Documentation Listing 2 example code*/
-void create_delay(){
+void create_delay(double second){
     // Local Variable Declaration
     volatile int * timer_ptr = (int *) 0xFFFEC600;    
-    int loadValue = 100000000; // delay =  1/(200 MHz) x 100x10^6 = 0.5 seconds
+    int loadValue = 200000000 * second; // delay =  1/(200 MHz) x 200x10^6 *seconds = 1sec * seconds
     
     // Set timer
     *(timer_ptr) = loadValue; 
