@@ -898,13 +898,13 @@ char box_name[24][MAX_STRING_LENGTH] =
 };
 
 // Player 1 information
-double playerMoney1 = 0;
+double playerMoney1 = 500;
 int position1 = 0;
 int property1[NUM_BOARD_BOX] = {0}; // Property ownership for player1
 
         
 // Player 2 information
-double playerMoney2 = 0;
+double playerMoney2 = 500;
 int position2 = 0;
 int property2[NUM_BOARD_BOX] = {0}; // Property ownership for player2
 
@@ -940,6 +940,7 @@ void wait_for_title_input();
 void wait_for_keyboard_input(unsigned char keycode);
 void display_dialog();
 void display_start_dialog();
+void display_police_dialog();
 void position_character1();
 
 
@@ -1080,12 +1081,15 @@ void state_game_screen(){
             increment_position1(diceMove);
             
             // Action according to position
-            if (1 || position1 == START){
+            if (position1 == START){
                 display_start_dialog();
                 playerMoney1 += 100;
             }
-            else if (position1 == POLICE){
+            else if (1 || position1 == POLICE){
+                display_police_dialog();
                 position1 = JAIL;
+                draw_game_screen();
+                wait_for_vsync();    
             }
             else if (position1 == JAIL){
                 // Do nothing
@@ -1100,9 +1104,22 @@ void state_game_screen(){
 }
 
 
-/* Draw character */
-void draw_character(int x, int y, short int color){
-
+/* Dialog box for polic */
+void display_police_dialog(){
+    display_dialog();
+    
+    plot_string(12, 25, "[Police!]");
+    plot_string(12, 27, "Go to jail!");
+    plot_string(12, 29, "== Moved to jail ==");
+    
+    update_status_message("Press space to close");
+  
+    wait_for_keyboard_input(0x29);
+    
+    // Clear text drawn
+    plot_string(12, 25, "                      ");
+    plot_string(12, 27, "                      ");
+    plot_string(12, 29, "                      ");
 }
 
 
@@ -1110,7 +1127,7 @@ void draw_character(int x, int y, short int color){
 void display_dialog(){
     // Local Variable Declaration
     int x = 43, y = 93;
-    int dy = 10;
+    int dy = 15;
     int width = 100, height  = 1;
     
     while(height < 70){
@@ -1127,11 +1144,19 @@ void display_dialog(){
 void display_start_dialog(){
     display_dialog();
     
-    plot_string(12, 25, "Start test");
+    plot_string(12, 25, "[Starting Point]");
+    plot_string(12, 27, "You earned salary!");
+    plot_string(12, 29, "== +100 ==");
+ 
+    update_status_message("Press space to close");
     
-    while (1){
-        
-    }
+    
+    wait_for_keyboard_input(0x29);
+    
+    // Clear text drawn
+    plot_string(12, 25, "                      ");
+    plot_string(12, 27, "                      ");
+    plot_string(12, 29, "                      ");
 }
 
 
